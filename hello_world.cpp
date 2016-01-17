@@ -1,13 +1,14 @@
 // compile in Linux with gcc:
 // g++ hello_world.cpp -lOpenCL
 
-#include "CL/cl.h"                              //
+#include <CL/cl.h>                              // hier wird OpenCl inkludiert
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define DATA_SIZE   10                          //
 #define MEM_SIZE    DATA_SIZE * sizeof(float)   //
+#define MAX_SOURCE_SIZE (0x100000)
 
 /** **/
 const char *KernelSource =

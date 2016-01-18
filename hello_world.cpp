@@ -167,14 +167,14 @@ int main (void)
 
   /* 2) */
 
-  //
+  // Erschaffe Speicherpuffer fuer Input und Output
   input  = clCreateBuffer (context, CL_MEM_READ_ONLY,  MEM_SIZE, NULL, &err);
   output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, MEM_SIZE, NULL, &err);
 
-  //
+  // Reihe Input in eine Befehlswarteschleife ein
   clEnqueueWriteBuffer(command_queue, input, CL_TRUE, 0, MEM_SIZE, data, 0, NULL, NULL);
 
-  //
+  // Lege die Reihenfolge der Kernelargumente fest
   clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
   clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
 
@@ -184,13 +184,13 @@ int main (void)
   //
   clEnqueueNDRangeKernel (command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
 
-  //
+  // Bearbeite die Befehlswarteschleife
   clFinish(command_queue);
 
-  //
+  // Reihe den Output in die Befehlswarteschleife ein
   clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, MEM_SIZE, results, 0, NULL, NULL);
 
-  //
+  // Gebe die Ergebnisse auf der Konsole aus
   for (unsigned int i=0; i < DATA_SIZE; i++)
     printf("%f\n", results[i]);
 

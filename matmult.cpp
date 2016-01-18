@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "utils.cpp"
 
-#define DATA_SIZE   10                          // Anzahl der vom Kernel zu verarbeitenden Daten
-#define MEM_SIZE    DATA_SIZE * sizeof(float)   // Speicherverbrauch der Daten
 #define MAX_SOURCE_SIZE (0x100000)
 
 /** **/
-int main (void)
+int main (int argc, char* argv[])
 {
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
   FILE *fp;
@@ -25,7 +24,6 @@ int main (void)
   fread(KernelSource, 1, MAX_SOURCE_SIZE, fp);
   fclose(fp);
 
-
   cl_int            err;
   cl_platform_id*   platforms = NULL;
   char              platform_name[1024];
@@ -36,10 +34,8 @@ int main (void)
   cl_kernel         kernel;
   cl_command_queue  command_queue;
   cl_program        program;
-  cl_mem            input, output;
-  float             data[DATA_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  size_t            global[1] = {DATA_SIZE};
-  float             results[DATA_SIZE] = {0};
+
+  // float             results[DATA_SIZE] = {0};
 
   err = clGetPlatformIDs(0, NULL, &num_of_platforms);
   if (err != CL_SUCCESS) {
@@ -128,18 +124,39 @@ int main (void)
 
 
   /* 2) */
+  float **A, **B, **C; // Matrizen
+  int dim1, dim2, dim3; // Matrixdimensionen
+  dim1 = atoi(argv[1]); // Zeilen von A, Zeilen von C
+  dim2 = atoi(argv[2]); // Spalten von A, Zeilen von B
+  dim3 = atoi(argv[3]); // Spalten von B, Spalten von C
+
+  // Alloziere Speicherplatz fuer die Matrizen
+  A = alloc_mat(dim1, dim2);
+  B = alloc_mat(dim2, dim3);
+  C = alloc_mat(dim1, dim3);
+
+  // Initialisiere Matrizen mit Zufallszahlen
+  init_mat(A, dim1, dim2);
+  init_mat(B, dim2, dim3);
+  init_mat(C, dim1, dim3);
+
+  cl_mem            in_A, in_B, output;
+  // float             data[DATA_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  size_t            global[1] = {dim1*dim3}; // Dimensionen von C
 
   // Erschaffe Speicherpuffer fuer Input und Output
-  input  = clCreateBuffer (context, CL_MEM_READ_ONLY,  MEM_SIZE, NULL, &err);
-  output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, MEM_SIZE, NULL, &err);
+  in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim1*dim2, NULL, &err);
+  in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim2*dim3, NULL, &err);
+  output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, sizeof(float)*dim1*dim3, NULL, &err);
 
   // Reihe Input in eine Befehlswarteschleife ein
-  clEnqueueWriteBuffer(command_queue, input, CL_TRUE, 0, MEM_SIZE, data, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, in_A, CL_TRUE, 0, sizeof(float)*dim1*dim2, *A, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, in_B, CL_TRUE, 0, sizeof(float)*dim2*dim3, *B, 0, NULL, NULL);
 
   // Lege die Reihenfolge der Kernelargumente fest
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-
+  clSetKernelArg(kernel, 0, sizeof(cl_mem), &in_A);
+  clSetKernelArg(kernel, 1, sizeof(cl_mem), &in_B);
+  clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
 
   /* 3)  */
 
@@ -150,15 +167,14 @@ int main (void)
   clFinish(command_queue);
 
   // Reihe den Output in die Befehlswarteschleife ein
-  clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, MEM_SIZE, results, 0, NULL, NULL);
+  clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, sizeof(float)*dim1*dim3, *C, 0, NULL, NULL);
 
-  // Gebe die Ergebnisse auf der Konsole aus
-  for (unsigned int i=0; i < DATA_SIZE; i++)
-    printf("%f\n", results[i]);
+  print_mat(C, dim1, dim3, "C ");
 
 
   /* 4) */
-  clReleaseMemObject(input);
+  clReleaseMemObject(in_A);
+  clReleaseMemObject(in_B);
   clReleaseMemObject(output);
   clReleaseProgram(program);
   clReleaseKernel(kernel);

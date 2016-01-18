@@ -12,6 +12,11 @@
 /** **/
 int main (int argc, char* argv[])
 {
+  if (argc != 4) {
+    printf("Error: Must specify 3 arguments.\n");
+    return 0;
+  }
+
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
   FILE *fp;
   const char *FileName = "kernel.cl";
@@ -138,15 +143,14 @@ int main (int argc, char* argv[])
   // Initialisiere Matrizen mit Zufallszahlen
   init_mat(A, dim1, dim2);
   init_mat(B, dim2, dim3);
-  init_mat(C, dim1, dim3);
 
   cl_mem            in_A, in_B, output;
   // float             data[DATA_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  size_t            global[1] = {dim1*dim3}; // Dimensionen von C
+  size_t            global[2] = {dim1*dim3}; // Dimensionen von C
 
   // Erschaffe Speicherpuffer fuer Input und Output
-  in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim1*dim2, NULL, &err);
-  in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim2*dim3, NULL, &err);
+  in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,  sizeof(float)*dim1*dim2, NULL, &err);
+  in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,  sizeof(float)*dim2*dim3, NULL, &err);
   output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, sizeof(float)*dim1*dim3, NULL, &err);
 
   // Reihe Input in eine Befehlswarteschleife ein
@@ -157,11 +161,13 @@ int main (int argc, char* argv[])
   clSetKernelArg(kernel, 0, sizeof(cl_mem), &in_A);
   clSetKernelArg(kernel, 1, sizeof(cl_mem), &in_B);
   clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
+  clSetKernelArg(kernel, 3, sizeof(int), &dim1);
+  clSetKernelArg(kernel, 4, sizeof(int), &dim2);
 
   /* 3)  */
 
-  //
-  clEnqueueNDRangeKernel (command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
+  // (,,2,,,,,) weil wir im Kernel mit get_global_id auf zwei Dimensionen zugreifen wollen
+  clEnqueueNDRangeKernel (command_queue, kernel, 2, NULL, global, NULL, 0, NULL, NULL);
 
   // Bearbeite die Befehlswarteschleife
   clFinish(command_queue);

@@ -10,9 +10,11 @@ __kernel void test(__global float *in_A, __global float *in_B, __global float *o
     b = in_B[i*dim2 +me1];
     scalar_prod += a*b;
   }
+  out_C[me2*dim1 + me1] = scalar_prod;
+}/*
 
-  //
-  C[me2*dim1 + me1] = scalar_prod;
-}
 
-/**/
+
+
+
+****/

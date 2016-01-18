@@ -1,3 +1,7 @@
+// Stand der Dinge:
+// Kompiliert und laeuft, gibt allerdings ausschliesslich Nullmatrizen raus. :(
+
+
 // compile in Linux with gcc:
 // g++ hello_world.cpp -lOpenCL
 
@@ -19,7 +23,7 @@ int main (int argc, char* argv[])
 
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
   FILE *fp;
-  const char *FileName = "kernel.cl";
+  const char *FileName = "matmult.cl";
   char *KernelSource;
   fp = fopen(FileName, "r");
   if (!fp) {
@@ -175,8 +179,14 @@ int main (int argc, char* argv[])
   // Reihe den Output in die Befehlswarteschleife ein
   clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, sizeof(float)*dim1*dim3, *C, 0, NULL, NULL);
 
-  print_mat(C, dim1, dim3, "C ");
+  // Ueberpruefe, ob serielle Version und parallele gleich sind:
+  float **correct_matrix;
+  correct_matrix = alloc_mat(dim1, dim3);
+  correct_matrix = mult_mat(A, B, dim1, dim2, dim3);
+  is_correct(C, correct_matrix, dim1, dim3);
 
+
+  print_mat(C, dim1, dim3, "C");
 
   /* 4) */
   clReleaseMemObject(in_A);

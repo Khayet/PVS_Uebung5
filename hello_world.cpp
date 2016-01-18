@@ -60,6 +60,49 @@ int main (void)
   float             results[DATA_SIZE] = {0}; // Vom Kernel zurueckgelieferte Ergebnisse
 
   /* 1) */
+  /*
+    1.3) Kompilieren Sie das Programm und fuhren Sie es aus
+    Kompilieren:
+
+    PS E:\Dokumente\Uni\WiSe1516\PVS\PVS_Uebung5> mingw32-make
+    gcc -I. .\hello_world.cpp C:\Windows\System32\OpenCl.dll -lstdc++ -o .\hello_world.exe
+    Warning: resolving _clGetPlatformIDs@12 by linking to _clGetPlatformIDs
+    Use --enable-stdcall-fixup to disable these warnings
+    Use --disable-stdcall-fixup to disable these fixups
+    Warning: resolving _clGetPlatformInfo@20 by linking to _clGetPlatformInfo
+    Warning: resolving _clGetDeviceIDs@24 by linking to _clGetDeviceIDs
+    Warning: resolving _clCreateContext@24 by linking to _clCreateContext
+    Warning: resolving _clCreateCommandQueue@20 by linking to _clCreateCommandQueue
+    Warning: resolving _clCreateProgramWithSource@20 by linking to _clCreateProgramWithSource
+    Warning: resolving _clBuildProgram@24 by linking to _clBuildProgram
+    Warning: resolving _clGetProgramBuildInfo@24 by linking to _clGetProgramBuildInfo
+    Warning: resolving _clCreateKernel@12 by linking to _clCreateKernel
+    Warning: resolving _clCreateBuffer@24 by linking to _clCreateBuffer
+    Warning: resolving _clEnqueueWriteBuffer@36 by linking to _clEnqueueWriteBuffer
+    Warning: resolving _clSetKernelArg@16 by linking to _clSetKernelArg
+    Warning: resolving _clEnqueueNDRangeKernel@36 by linking to _clEnqueueNDRangeKernel
+    Warning: resolving _clFinish@4 by linking to _clFinish
+    Warning: resolving _clEnqueueReadBuffer@36 by linking to _clEnqueueReadBuffer
+    Warning: resolving _clReleaseMemObject@4 by linking to _clReleaseMemObject
+    Warning: resolving _clReleaseProgram@4 by linking to _clReleaseProgram
+    Warning: resolving _clReleaseKernel@4 by linking to _clReleaseKernel
+    Warning: resolving _clReleaseCommandQueue@4 by linking to _clReleaseCommandQueue
+    Warning: resolving _clReleaseContext@4 by linking to _clReleaseContext
+
+    Ausfuehren:
+    PS E:\Dokumente\Uni\WiSe1516\PVS\PVS_Uebung5> .\hello_world.exe
+    1.000000
+    4.000000
+    9.000000
+    16.000000
+    25.000000
+    36.000000
+    49.000000
+    64.000000
+    81.000000
+    100.000000
+  */
+
 
   // Liefert Anzahl an in dieser Umgebung vorhandenen Plattformen
   err = clGetPlatformIDs(0, NULL, &num_of_platforms);

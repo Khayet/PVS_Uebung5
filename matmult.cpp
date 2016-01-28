@@ -1,7 +1,3 @@
-// Stand der Dinge:
-// Kompiliert und laeuft, gibt allerdings ausschliesslich Nullmatrizen raus. :(
-
-
 // compile in Linux with gcc:
 // g++ hello_world.cpp -lOpenCL
 
@@ -9,9 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
 #include "utils.cpp"
 
-#define MAX_SOURCE_SIZE (0x100000)
+#define MAX_SOURCE_SIZE (0x1000)
 
 /** **/
 int main (int argc, char* argv[])
@@ -30,8 +27,10 @@ int main (int argc, char* argv[])
     printf("Can't open kernel source: %s", FileName); exit(1);
   }
   KernelSource = (char *)malloc(MAX_SOURCE_SIZE);
-  fread(KernelSource, 1, MAX_SOURCE_SIZE, fp);
+  size_t kernel_s_size = fread(KernelSource, 1, MAX_SOURCE_SIZE, fp);
   fclose(fp);
+
+//  printf("%s\n", KernelSource);
 
   cl_int            err;
   cl_platform_id*   platforms = NULL;
@@ -62,7 +61,6 @@ int main (int argc, char* argv[])
     int nvidia_platform = 0;  // Speichert den Rang der letzten NVIDIA-Plattform
     for (unsigned int i=0; i<num_of_platforms; i++) // Fuer jede Plattform:
     {
-      // Speichere den Namen der Plattform
       clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, sizeof(platform_name), platform_name, NULL);
       if (err != CL_SUCCESS) {
         printf("Could not get information about platform. Error: %d\n", err);
@@ -97,7 +95,7 @@ int main (int argc, char* argv[])
   }
 
   // Initialisiere ein Programm und spezifiziere, aus welchem Code dieses kompiliert werden soll
-  program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, NULL, &err);
+  program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, (const size_t *)&kernel_s_size, &err);
   if (err != CL_SUCCESS) {
     printf("Unable to create program. Error: %d\n", err);
     return 0;
@@ -125,58 +123,50 @@ int main (int argc, char* argv[])
   }
 
   // Erschaffe einen Kernel und lade oben kompiliertes Programm ein
-  kernel = clCreateKernel(program, "test", &err);
+  kernel = clCreateKernel(program, "matmult", &err);
   if (err != CL_SUCCESS) {
     printf("Error setting kernel. Error: %d\n", err);
     return 0;
   }
 
-
-  /* 2) */
   float **A, **B, **C; // Matrizen
   int dim1, dim2, dim3; // Matrixdimensionen
   dim1 = atoi(argv[1]); // Zeilen von A, Zeilen von C
   dim2 = atoi(argv[2]); // Spalten von A, Zeilen von B
   dim3 = atoi(argv[3]); // Spalten von B, Spalten von C
 
-  // Alloziere Speicherplatz fuer die Matrizen
   A = alloc_mat(dim1, dim2);
   B = alloc_mat(dim2, dim3);
   C = alloc_mat(dim1, dim3);
 
-  // Initialisiere Matrizen mit Zufallszahlen
   init_mat(A, dim1, dim2);
   init_mat(B, dim2, dim3);
 
   cl_mem            in_A, in_B, output;
   // float             data[DATA_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  size_t            global[2] = {dim1*dim3}; // Dimensionen von C
+  size_t            global[1] = {dim1*dim3}; // Dimensionen von C
 
-  // Erschaffe Speicherpuffer fuer Input und Output
-  in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,  sizeof(float)*dim1*dim2, NULL, &err);
-  in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,  sizeof(float)*dim2*dim3, NULL, &err);
+  in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim1*dim2, NULL, &err);
+  in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim2*dim3, NULL, &err);
   output = clCreateBuffer (context, CL_MEM_WRITE_ONLY, sizeof(float)*dim1*dim3, NULL, &err);
 
-  // Reihe Input in eine Befehlswarteschleife ein
   clEnqueueWriteBuffer(command_queue, in_A, CL_TRUE, 0, sizeof(float)*dim1*dim2, *A, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, in_B, CL_TRUE, 0, sizeof(float)*dim2*dim3, *B, 0, NULL, NULL);
 
-  // Lege die Reihenfolge der Kernelargumente fest
   clSetKernelArg(kernel, 0, sizeof(cl_mem), &in_A);
   clSetKernelArg(kernel, 1, sizeof(cl_mem), &in_B);
   clSetKernelArg(kernel, 2, sizeof(cl_mem), &output);
-  clSetKernelArg(kernel, 3, sizeof(int), &dim1);
-  clSetKernelArg(kernel, 4, sizeof(int), &dim2);
+  // clSetKernelArg(kernel, 3, sizeof(int), &dim2);
+  // clSetKernelArg(kernel, 4, sizeof(int), &dim3);
 
-  /* 3)  */
+  clEnqueueNDRangeKernel (command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
 
-  // (,,2,,,,,) weil wir im Kernel mit get_global_id auf zwei Dimensionen zugreifen wollen
-  clEnqueueNDRangeKernel (command_queue, kernel, 2, NULL, global, NULL, 0, NULL, NULL);
+  err = clFinish(command_queue);
+  if (err == CL_INVALID_COMMAND_QUEUE ) {
+    printf("CL_INVALID_COMMAND_QUEUE: %d\n", err);
+    return 0;
+  }
 
-  // Bearbeite die Befehlswarteschleife
-  clFinish(command_queue);
-
-  // Reihe den Output in die Befehlswarteschleife ein
   clEnqueueReadBuffer(command_queue, output, CL_TRUE, 0, sizeof(float)*dim1*dim3, *C, 0, NULL, NULL);
 
   // Ueberpruefe, ob serielle Version und parallele gleich sind:
@@ -184,17 +174,18 @@ int main (int argc, char* argv[])
   correct_matrix = alloc_mat(dim1, dim3);
   correct_matrix = mult_mat(A, B, dim1, dim2, dim3);
   is_correct(C, correct_matrix, dim1, dim3);
+  print_mat(C, dim1, dim3, "Matrix C = ");
 
-
-  print_mat(C, dim1, dim3, "C");
-
-  /* 4) */
   clReleaseMemObject(in_A);
   clReleaseMemObject(in_B);
   clReleaseMemObject(output);
   clReleaseProgram(program);
   clReleaseKernel(kernel);
-  clReleaseCommandQueue(command_queue);
+  err = clReleaseCommandQueue(command_queue); //!!
+  if (err != CL_SUCCESS) {
+    printf("Error releasing command queue: %d\n", err);
+    return 0;
+  }
   clReleaseContext(context);
 
   return 0;

@@ -74,7 +74,7 @@ void is_correct(float **A, float **B, int row, int col)
 // ---------------------------------------------------------------------------
 // Ausgabe der Matrixelemente fuer Debugzwecke
 
-void print_mat(float **A, int row, int col, char *tag)
+void print_mat(float **A, int row, int col, const char *tag)
 {
     int i, j;
 

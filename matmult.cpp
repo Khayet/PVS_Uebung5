@@ -7,15 +7,13 @@
 #include "utils.cpp"
 
 #define MAX_SOURCE_SIZE (0x1000)
+#define D1 10
+#define D2 10
+#define D3 10
 
 /** **/
 int main (int argc, char* argv[])
 {
-  if (argc != 4) {
-    printf("Error: Must specify 3 arguments.\n");
-    return 0;
-  }
-
   int WORK_DIM = 2; // Wie viele Dimensionen hat der Indexraum?
 
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
@@ -126,9 +124,9 @@ int main (int argc, char* argv[])
 
   float **A, **B, **C; // Matrizen
   int dim1, dim2, dim3; // Matrixdimensionen
-  dim1 = atoi(argv[1]); // Zeilen von A, Zeilen von C
-  dim2 = atoi(argv[2]); // Spalten von A, Zeilen von B
-  dim3 = atoi(argv[3]); // Spalten von B, Spalten von C
+  dim1 = D1; // Zeilen von A, Zeilen von C
+  dim2 = D2; // Spalten von A, Zeilen von B
+  dim3 = D3; // Spalten von B, Spalten von C
 
   A = alloc_mat(dim1, dim2);
   B = alloc_mat(dim2, dim3);

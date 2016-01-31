@@ -1,7 +1,5 @@
-// compile in Linux with gcc:
-// g++ hello_world.cpp -lOpenCL
-
-#include <CL/cl.h>                              // hier wird OpenCl inkludiert
+// #include <omp.h>  //fuer Zeitmessungen
+#include <CL/cl.h>  // hier wird OpenCl inkludiert
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,8 +28,6 @@ int main (int argc, char* argv[])
   size_t kernel_s_size = fread(KernelSource, 1, MAX_SOURCE_SIZE, fp);
   fclose(fp);
 
-//  printf("%s\n", KernelSource);
-
   cl_int            err;
   cl_platform_id*   platforms = NULL;
   char              platform_name[1024];
@@ -43,7 +39,6 @@ int main (int argc, char* argv[])
   cl_command_queue  command_queue;
   cl_program        program;
 
-  // float             results[DATA_SIZE] = {0};
 
   err = clGetPlatformIDs(0, NULL, &num_of_platforms);
   if (err != CL_SUCCESS) {
@@ -95,7 +90,7 @@ int main (int argc, char* argv[])
   }
 
   // Initialisiere ein Programm und spezifiziere, aus welchem Code dieses kompiliert werden soll
-  program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, (const size_t *)&kernel_s_size, &err);
+  program = clCreateProgramWithSource(context, 1, (const char **)&KernelSource, (const size_t *)& kernel_s_size, &err);
   if (err != CL_SUCCESS) {
     printf("Unable to create program. Error: %d\n", err);
     return 0;
@@ -107,12 +102,10 @@ int main (int argc, char* argv[])
     // Zeige Compilermeldungen an: (uebernommen von Foliensatz 9, Folie 23)
     char *log;
     size_t size;
-    clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG,
-    0, NULL, &size);
+    clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &size);
     log = (char *)malloc(size+1);
     if (log) {
-      clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG,
-      size, log, NULL);
+      clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, size, log, NULL);
       log[size] = '\0';
       printf("%s", log);
       free(log);
@@ -159,9 +152,13 @@ int main (int argc, char* argv[])
   // clSetKernelArg(kernel, 3, sizeof(int), &dim2);
   // clSetKernelArg(kernel, 4, sizeof(int), &dim3);
 
-  clEnqueueNDRangeKernel (command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
+  clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
 
+  // double t_start, t_end; // Zeitmessungen
+  // t_start = omp_get_wtime();
   err = clFinish(command_queue);
+  // t_end = omp_get_wtime();
+
   if (err == CL_INVALID_COMMAND_QUEUE ) {
     printf("CL_INVALID_COMMAND_QUEUE: %d\n", err);
     return 0;
@@ -173,8 +170,11 @@ int main (int argc, char* argv[])
   float **correct_matrix;
   correct_matrix = alloc_mat(dim1, dim3);
   correct_matrix = mult_mat(A, B, dim1, dim2, dim3);
-  is_correct(C, correct_matrix, dim1, dim3);
-  print_mat(C, dim1, dim3, "Matrix C = ");
+  is_correct(C, correct_matrix, dim1, dim3); // Numerischer Korrektheitsbeweis
+
+  print_mat(C, dim1, dim3, "C = ");
+  print_mat(correct_matrix, dim1, dim3, "correct_matrix = ");
+  // printf("Kernel execution time: %f\n", t_end-t_start);
 
   clReleaseMemObject(in_A);
   clReleaseMemObject(in_B);
@@ -186,6 +186,7 @@ int main (int argc, char* argv[])
     printf("Error releasing command queue: %d\n", err);
     return 0;
   }
+  std::cout << "Still working!\n";
   clReleaseContext(context);
 
   return 0;

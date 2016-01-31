@@ -1,22 +1,39 @@
-// Aufgabe 3: Speicheroptimierung
+// Aufgabe 4: Verteilte Speicheroptimierung in Arbeitsgruppen
 #define DIM 10
 __kernel void matmult(__global float *A, __global float *B, __global float *C )
 {
   int i, j, k;
-  i = get_global_id(0);
-  float A_loc[DIM], row_sum;
+  j = get_global_id(0);
+  i = get_global_id(1);
+  float A_loc[DIM], B_loc[DIM], row_sum;
 
-  for (k = 0; k < DIM; k++) A_loc[k] = A[i*DIM+k];
+  for (k = 0; k < DIM; k++) A_loc[k] = A[i*DIM+k]; // Kopiere A zeilenweise
+  for (k = 0; k < DIM; k++) B_loc[k] = B[k*DIM+j]; // Kopiere A zeilenweise
 
-  for (j = 0; j < DIM; j++) {
-    row_sum = 0.0;
-    for (k = 0; k < DIM; k++) {
-      row_sum += A_loc[k] * B[k*DIM+j];
-    }
-    C[i*DIM+j] = row_sum;
+  row_sum = 0.0;
+  for (k = 0; k < DIM; k++) {
+    row_sum += A_loc[k] * B_loc[k];
   }
+  C[i*DIM+j] = row_sum;
 }
 
+// Aufgabe 3: Speicheroptimierung
+// #define DIM 10
+// __kernel void matmult(__global float *A, __global float *B, __global float *C )
+// {
+//   int i, j, k;
+//   j = get_global_id(0);
+//   i = get_global_id(1);
+//   float A_loc[DIM], row_sum;
+
+//   for (k = 0; k < DIM; k++) A_loc[k] = A[i*DIM+k];
+
+//   row_sum = 0.0;
+//   for (k = 0; k < DIM; k++) {
+//     row_sum += A_loc[k] * B[k*DIM+j];
+//   }
+//   C[i*DIM+j] = row_sum;
+// }
 
 // Aufgabe 2: Schleifen tauschen
 // #define DIM 10

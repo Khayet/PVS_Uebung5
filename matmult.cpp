@@ -16,6 +16,8 @@ int main (int argc, char* argv[])
     return 0;
   }
 
+  int WORK_DIM = 2; // Wie viele Dimensionen hat der Indexraum?
+
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
   FILE *fp;
   const char *FileName = "matmult.cl";
@@ -137,7 +139,9 @@ int main (int argc, char* argv[])
 
   cl_mem            in_A, in_B, output;
   // float             data[DATA_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  size_t            global[1] = {dim1*dim3}; // Dimensionen von C
+
+  size_t global[1] = {dim1*dim3}; // Dimensionen von C
+  size_t global_two[2] = {dim1, dim3};
 
   in_A  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim1*dim2, NULL, &err);
   in_B  = clCreateBuffer (context, CL_MEM_READ_ONLY,  sizeof(float)*dim2*dim3, NULL, &err);
@@ -153,6 +157,9 @@ int main (int argc, char* argv[])
   // clSetKernelArg(kernel, 4, sizeof(int), &dim3);
 
   clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
+  if (WORK_DIM == 2) {
+    clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, global_two, NULL, 0, NULL, NULL);
+  }
 
   // double t_start, t_end; // Zeitmessungen
   // t_start = omp_get_wtime();

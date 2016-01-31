@@ -1,17 +1,16 @@
+// Aufgabe 2: Schleifen tauschen
 #define DIM 10
 __kernel void matmult(__global float *A, __global float *B, __global float *C )
 {
   int i, j, k;
-  i = get_global_id(0);
-  float cur_val;
+  j = get_global_id(0);
+  i = get_global_id(1);
+  float row_sum = 0.0;
 
-  for (j = 0; j < DIM; j++) {
-    cur_val = C[i*DIM+j];
-    for (k = 0; k < DIM; k++) {
-      cur_val += A[i*DIM+k] * B[k*DIM+j];
-    }
-    C[i*DIM+j] = cur_val;
+  for (k = 0; k < DIM; k++) {
+    row_sum += A[i*DIM+k] * B[k*DIM+j];
   }
+  C[i*DIM+j] = row_sum;
 }
 
 // Aufgabe 1: Reduktion von Feldzugriffen
@@ -20,14 +19,14 @@ __kernel void matmult(__global float *A, __global float *B, __global float *C )
 // {
 //   int i, j, k;
 //   i = get_global_id(0);
-//   float cur_val;
+//   float row_sum;
 
 //   for (j = 0; j < DIM; j++) {
-//     cur_val = C[i*DIM+j];
+//     row_sum = C[i*DIM+j];
 //     for (k = 0; k < DIM; k++) {
-//       cur_val += A[i*DIM+k] * B[k*DIM+j];
+//       row_sum += A[i*DIM+k] * B[k*DIM+j];
 //     }
-//     C[i*DIM+j] = cur_val;
+//     C[i*DIM+j] = row_sum;
 //   }
 // }
 

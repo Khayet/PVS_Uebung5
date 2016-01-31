@@ -1,9 +1,9 @@
-// #include <omp.h>  //fuer Zeitmessungen
 #include <CL/cl.h>  // hier wird OpenCl inkludiert
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <chrono> // fuer Zeitmessungen
 #include "utils.cpp"
 
 #define MAX_SOURCE_SIZE (0x1000)
@@ -15,6 +15,8 @@
 int main (int argc, char* argv[])
 {
   int WORK_DIM = 2; // Wie viele Dimensionen hat der Indexraum?
+  std::chrono::time_point<std::chrono::system_clock> s_start, s_end, p_start, p_end;
+
 
   // Lese den Kernel dynamisch ein: (uebernommen von Foliensatz 9, Folie 20)
   FILE *fp;
@@ -159,10 +161,12 @@ int main (int argc, char* argv[])
     clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, global_two, NULL, 0, NULL, NULL);
   }
 
-  // double t_start, t_end; // Zeitmessungen
-  // t_start = omp_get_wtime();
+  // Zeitmessung fuer parallele Version
+  p_start = std::chrono::system_clock::now();
   err = clFinish(command_queue);
-  // t_end = omp_get_wtime();
+  p_end = std::chrono::system_clock::now();
+  std::chrono::duration<double> p_duration = p_end - p_start;
+
 
   if (err == CL_INVALID_COMMAND_QUEUE ) {
     printf("CL_INVALID_COMMAND_QUEUE: %d\n", err);
@@ -174,7 +178,12 @@ int main (int argc, char* argv[])
   // Ueberpruefe, ob serielle Version und parallele gleich sind:
   float **correct_matrix;
   correct_matrix = alloc_mat(dim1, dim3);
+
+  s_start = std::chrono::system_clock::now(); // Zeitmessung fuer serielle Version
   correct_matrix = mult_mat(A, B, dim1, dim2, dim3);
+  s_end = std::chrono::system_clock::now();
+  std::chrono::duration<double> s_duration = s_end - s_start;
+
   is_correct(C, correct_matrix, dim1, dim3); // Numerischer Korrektheitsbeweis
 
   print_mat(C, dim1, dim3, "C = ");
@@ -191,8 +200,12 @@ int main (int argc, char* argv[])
     printf("Error releasing command queue: %d\n", err);
     return 0;
   }
-  std::cout << "Still working!\n";
   clReleaseContext(context);
+
+  printf("Dauer der seriellen Version: %.2f Millisekunden\n", s_duration.count() * 1000);
+  printf("Dauer der parallelen Version: %.2f Millisekunden\n", p_duration.count() * 1000);
+  printf("Erhaltenes Speed Up: %.2f \n", p_duration.count() / p_duration.count());
+
 
   return 0;
 }
